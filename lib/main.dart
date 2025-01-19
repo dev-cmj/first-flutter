@@ -1,4 +1,5 @@
 import 'package:first/screens/home/home_screen.dart';
+import 'package:first/screens/login/login_screen.dart';
 import 'package:first/widget/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const MainLayout(), // 초기 화면
+      home: const LoginScreen(), // 로그인 화면을 초기 화면으로 설정
     );
   }
 }
