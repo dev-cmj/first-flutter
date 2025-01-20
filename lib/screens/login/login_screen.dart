@@ -1,107 +1,207 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-
-import '../../widget/layout/main_layout.dart';
-import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _CustomLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+class _CustomLoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  bool _keepLoggedIn = false;
 
-  Future<void> _login() async {
-    final username = _usernameController.text;
-    final password = _passwordController.text;
-
-    if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아이디와 비밀번호를 입력해주세요.')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // API 요청
-      final response = await http.post(
-        Uri.parse('http://192.168.54.12:8080/api/v1/auth/login'),
-        body: jsonEncode({'username': username, 'password': password}),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(data);
-
-        // 로그인 성공 처리 (예: 토큰 저장)
-        if (data['success'] == true) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainLayout()),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['message'] ?? '로그인 실패')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인 실패. 다시 시도해주세요.')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('오류 발생. 인터넷 연결을 확인해주세요.')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('로그인'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: '아이디'),
+      body: Stack(
+        children: [
+          // 배경 이미지
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('background_1.png'),
+                fit: BoxFit.cover,
               ),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: '비밀번호'),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                onPressed: _login,
-                child: const Text('로그인'),
-              ),
-            ],
+            ),
           ),
-        ),
+          Container(
+            color: Colors.black.withOpacity(0.8), // 배경 어둡게
+          ),
+          // 로그인 폼
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                constraints: const BoxConstraints(maxWidth: 400),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8), // 약간 투명한 검은색 배경
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // 아이디 입력 필드
+                    TextFormField(
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: '아이디',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.black,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // 비밀번호 입력 필드
+                    TextFormField(
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: '비밀번호',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.black,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // 로그인 상태 유지 스위치
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '로그인 상태 유지',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        Switch(
+                          value: _keepLoggedIn,
+                          onChanged: (value) {
+                            setState(() {
+                              _keepLoggedIn = value;
+                            });
+                          },
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.blue,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 로그인 버튼
+                    ElevatedButton(
+                      onPressed: () {
+                        print('로그인 버튼 클릭');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('로그인',
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 16),
+                    // 하단 텍스트
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            print('아이디 찾기 클릭');
+                          },
+                          child: const Text(
+                            '아이디 찾기',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        const Text('|', style: TextStyle(color: Colors.grey)),
+                        InkWell(
+                          onTap: () {
+                            print('비밀번호 찾기 클릭');
+                          },
+                          child: const Text(
+                            '비밀번호 찾기',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        const Text('|', style: TextStyle(color: Colors.grey)),
+                        InkWell(
+                          onTap: () {
+                            print('회원가입 클릭');
+                          },
+                          child: const Text(
+                            '회원가입',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(color: Colors.grey),
+                    const Center(
+                      child: Text(
+                        'SNS 계정으로 로그인',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // SNS 로그인 버튼들
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildSNSButton(Icons.facebook, Colors.blue),
+                        _buildSNSButton(Icons.language, Colors.green),
+                        // Naver
+                        _buildSNSButton(Icons.chat, const Color(0xFFFEE500)),
+                        // Kakao
+                        _buildSNSButton(Icons.apple, Colors.white),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSNSButton(IconData icon, Color color) {
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: color,
+      child: IconButton(
+        icon: Icon(icon,
+            color: color == Colors.white ? Colors.black : Colors.white),
+        onPressed: () {
+          print('SNS 버튼 클릭');
+        },
       ),
     );
   }
